@@ -26,8 +26,8 @@
 Aucune installation particulière n'est requise. Clonez simplement le dépôt :
 
 ```bash
-git clone <url-du-repo>
-cd Computerv1
+git clone <url-du-repo> <nom_du_repo>
+cd <nom_du_repo>
 ```
 
 ## Utilisation
@@ -38,11 +38,11 @@ cd Computerv1
 python3 computor.py
 ```
 
-Vous pouvez alors entrer une expression mathématique à résoudre, par exemple :
+Vous pouvez alors entrer une equation mathématique à résoudre, par exemple :
 
 ```
-> 2 + 2
-4
+> X + 1 = 0
+-1
 ```
 
 ### Lancer les tests
@@ -53,14 +53,6 @@ Un script de test est fourni pour valider le fonctionnement du programme :
 bash test.sh
 ```
 
-## Exemples d'expressions supportées
-
-- Addition : `3 + 4`
-- Soustraction : `10 - 2`
-- Multiplication : `5 * 6`
-- Division : `8 / 2`
-- Parenthèses : `(2 + 3) * 4`
-- Résolution d'équations simples (si implémenté)
 
 ## Gestion des erreurs
 
@@ -73,6 +65,3 @@ Le programme affiche un message d'erreur clair en cas de :
 
 - Aurelien Fontaine
 
-## Licence
-
-Ce projet est sous licence MIT.
