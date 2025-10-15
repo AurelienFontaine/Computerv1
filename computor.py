@@ -342,15 +342,21 @@ class PolynomialSolver:
                 print(f"Real part: -b/2a = -({b})/(2*{a}) = {real_part}")
                 print(f"Imaginary part: √|Δ|/2a = √{-discriminant}/(2*{a}) = {sqrt_discriminant}/{2*a} = {imaginary_part}")
             
-            real_frac = self._format_solution(real_part)
-            imag_frac = self._format_solution(imaginary_part)
+            # Format complex solutions with exact forms
+            real_str = self._format_complex_real_part(real_part)
+            imag_str = self._format_complex_imaginary_part(imaginary_part, -discriminant, 2 * a)
             
             if self.verbose:
                 print(f"\nX₁ = {real_part} + {imaginary_part}i")
                 print(f"X₂ = {real_part} - {imaginary_part}i\n")
             
-            print(f"{real_frac} + {imag_frac}i")
-            print(f"{real_frac} - {imag_frac}i")
+            # Format the final complex number properly
+            if real_str == "0":
+                print(f"{imag_str}")
+                print(f"-{imag_str}")
+            else:
+                print(f"{real_str} + {imag_str}")
+                print(f"{real_str} - {imag_str}")
     
     def _sqrt(self, x):
         """Calculate square root using Newton's method (no math library!)"""
@@ -401,6 +407,122 @@ class PolynomialSolver:
         
         # If no simple fraction found, return decimal only
         return str(value)
+    
+    def _format_complex_real_part(self, real_part):
+        """Format the real part of complex solutions"""
+        epsilon = 1e-9
+        
+        # Check if it's close to an integer
+        if abs(real_part - round(real_part)) < epsilon:
+            return str(int(round(real_part)))
+        
+        # Try to express as a simple fraction
+        for denom in range(2, 101):
+            numer = real_part * denom
+            if abs(numer - round(numer)) < epsilon:
+                numer = int(round(numer))
+                gcd = self._gcd(numer, denom)
+                numer //= gcd
+                denom //= gcd
+                if denom == 1:
+                    return str(numer)
+                else:
+                    return f"{numer}/{denom}"
+        
+        # If no simple fraction found, return decimal
+        return str(real_part)
+    
+    def _format_complex_imaginary_part(self, imaginary_part, discriminant_abs, denominator):
+        """Format the imaginary part of complex solutions with exact square roots"""
+        epsilon = 1e-9
+        
+        # Check if we can factor out a perfect square from the discriminant
+        # For example: discriminant = 8, so √8 = 2√2
+        sqrt_disc = self._sqrt(discriminant_abs)
+        
+        # Try to find if discriminant_abs is a multiple of a perfect square
+        # Start from the largest possible factor to get the most simplified form
+        for factor in range(int(sqrt_disc), 1, -1):
+            if discriminant_abs % (factor * factor) == 0:
+                remaining = int(discriminant_abs // (factor * factor))
+                # Case: discriminant_abs = factor² * remaining, so √discriminant = factor√remaining
+                coeff = factor / denominator
+                if abs(coeff - round(coeff)) < epsilon:
+                    coeff_int = int(round(coeff))
+                    if remaining == 1:
+                        # Perfect case: discriminant_abs = factor², so √discriminant = factor
+                        if coeff_int == 1:
+                            return "i"
+                        elif coeff_int == -1:
+                            return "-i"
+                        else:
+                            return f"{coeff_int}i"
+                    else:
+                        if coeff_int == 1:
+                            return f"√{remaining}i"
+                        elif coeff_int == -1:
+                            return f"-√{remaining}i"
+                        else:
+                            return f"{coeff_int}√{remaining}i"
+                else:
+                    # Try to simplify the fraction
+                    for d in range(2, 101):
+                        n = coeff * d
+                        if abs(n - round(n)) < epsilon:
+                            n = int(round(n))
+                            gcd = self._gcd(n, d)
+                            n //= gcd
+                            d //= gcd
+                            if remaining == 1:
+                                if d == 1:
+                                    if n == 1:
+                                        return "i"
+                                    elif n == -1:
+                                        return "-i"
+                                    else:
+                                        return f"{n}i"
+                                else:
+                                    return f"{n}i/{d}"
+                            else:
+                                if d == 1:
+                                    if n == 1:
+                                        return f"√{remaining}i"
+                                    elif n == -1:
+                                        return f"-√{remaining}i"
+                                    else:
+                                        return f"{n}√{remaining}i"
+                                else:
+                                    return f"{n}√{remaining}i/{d}"
+        
+        # If no perfect square factorization found, try simple fraction
+        if abs(imaginary_part - round(imaginary_part)) < epsilon:
+            imag_int = int(round(imaginary_part))
+            if imag_int == 1:
+                return "i"
+            elif imag_int == -1:
+                return "-i"
+            else:
+                return f"{imag_int}i"
+        
+        for denom in range(2, 101):
+            numer = imaginary_part * denom
+            if abs(numer - round(numer)) < epsilon:
+                numer = int(round(numer))
+                gcd = self._gcd(numer, denom)
+                numer //= gcd
+                denom //= gcd
+                if denom == 1:
+                    if numer == 1:
+                        return "i"
+                    elif numer == -1:
+                        return "-i"
+                    else:
+                        return f"{numer}i"
+                else:
+                    return f"{numer}i/{denom}"
+        
+        # If no simple form found, return decimal
+        return str(imaginary_part)
     
     def _format_quadratic_solution(self, a, b, c, discriminant, is_positive):
         """Format quadratic solution with exact form when possible"""
