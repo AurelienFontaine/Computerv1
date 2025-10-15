@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Computor v1 - Polynomial Equation Solver
-Solves polynomial equations of degree 2 or lower
-"""
-
 import sys
 import re
 
@@ -59,12 +53,7 @@ class PolynomialSolver:
         self.validate_equation()
         
         # Split equation by '='
-        if '=' not in self.equation_str:
-            raise ValueError("Invalid equation: missing '='")
-        
         parts = self.equation_str.split('=')
-        if len(parts) != 2:
-            raise ValueError("Invalid equation: multiple '=' signs")
         
         left_side, right_side = parts
         
@@ -75,7 +64,6 @@ class PolynomialSolver:
         except Exception as e:
             raise ValueError(f"Error parsing equation: {e}")
         
-        # Combine: left - right (move everything to left side)
         all_powers = set(left_coeffs.keys()) | set(right_coeffs.keys())
         self.coefficients = {}
         
@@ -179,7 +167,6 @@ class PolynomialSolver:
         return coeffs
     
     def get_reduced_form(self):
-        """Return the reduced form of the equation as a string"""
         if not self.coefficients:
             return "0 * X^0 = 0"
         
@@ -266,8 +253,7 @@ class PolynomialSolver:
         # Solution: X = -b/a
         solution = -b / a
         solution_str = self._format_solution(solution)
-        print(f"The solution is:")
-        print(solution_str)
+        print(f"The solution is: {solution_str}")
     
     def _solve_degree_2(self):
         """Solve quadratic equation: a*X^2 + b*X + c = 0"""
@@ -291,7 +277,7 @@ class PolynomialSolver:
         
         if discriminant > 0:
             print("Discriminant is strictly positive, the two solutions are:")
-            # Two real solutions (print larger solution first)
+
             sqrt_discriminant = self._sqrt(discriminant)
             
             if self.verbose:
@@ -313,9 +299,15 @@ class PolynomialSolver:
             if self.verbose:
                 print(f"X₂ = {x2}\n")
             
-            # Print in descending order with fraction formatting
-            x1_str = self._format_solution(x1)
-            x2_str = self._format_solution(x2)
+            # Try to format as exact fractions first, then fall back to decimal
+            x1_str = self._format_quadratic_solution(a, b, c, discriminant, True)
+            x2_str = self._format_quadratic_solution(a, b, c, discriminant, False)
+            
+            if x1_str is None:
+                x1_str = self._format_solution(x1)
+            if x2_str is None:
+                x2_str = self._format_solution(x2)
+            
             if x1 > x2:
                 print(x1_str)
                 print(x2_str)
@@ -324,7 +316,7 @@ class PolynomialSolver:
                 print(x1_str)
         elif discriminant == 0:
             print("Discriminant is zero, the solution is:")
-            # One solution
+
             if self.verbose:
                 print(f"\nX = -b / 2a = -({b}) / (2*{a})")
                 print(f"X = {-b} / {2*a}")
@@ -336,9 +328,8 @@ class PolynomialSolver:
             
             x_str = self._format_solution(x)
             print(x_str)
-        else:  # discriminant < 0
+        else:  
             print("Discriminant is strictly negative, the two complex solutions are:")
-            # Complex solutions
             
             if self.verbose:
                 print(f"\n√(-Δ) = √{-discriminant} (imaginary)")
@@ -351,9 +342,8 @@ class PolynomialSolver:
                 print(f"Real part: -b/2a = -({b})/(2*{a}) = {real_part}")
                 print(f"Imaginary part: √|Δ|/2a = √{-discriminant}/(2*{a}) = {sqrt_discriminant}/{2*a} = {imaginary_part}")
             
-            # Try to format as simple fractions
-            real_frac = self._try_fraction(real_part)
-            imag_frac = self._try_fraction(imaginary_part)
+            real_frac = self._format_solution(real_part)
+            imag_frac = self._format_solution(imaginary_part)
             
             if self.verbose:
                 print(f"\nX₁ = {real_part} + {imaginary_part}i")
@@ -384,30 +374,6 @@ class PolynomialSolver:
             a, b = b, a % b
         return a
     
-    def _try_fraction(self, decimal):
-        """Try to convert decimal to a simple fraction string, otherwise return decimal"""
-        # Try to find a simple fraction representation
-        epsilon = 1e-9
-        
-        # Check if it's already close to an integer
-        if abs(decimal - round(decimal)) < epsilon:
-            return str(int(round(decimal)))
-        
-        # Try denominators from 2 to 20
-        for denom in range(2, 21):
-            numer = decimal * denom
-            if abs(numer - round(numer)) < epsilon:
-                numer = int(round(numer))
-                gcd = self._gcd(numer, denom)
-                numer //= gcd
-                denom //= gcd
-                if denom == 1:
-                    return str(numer)
-                else:
-                    return f"{numer}/{denom}"
-        
-        # If no simple fraction found, return decimal
-        return str(decimal)
     
     def _format_solution(self, value):
         """Format a solution value as fraction if possible, otherwise as decimal"""
@@ -429,12 +395,111 @@ class PolynomialSolver:
                 if denom == 1:
                     return str(numer)
                 else:
-                    # Return both fraction and decimal for clarity
+                    
                     decimal_val = value
                     return f"{numer}/{denom} ({decimal_val})"
         
         # If no simple fraction found, return decimal only
         return str(value)
+    
+    def _format_quadratic_solution(self, a, b, c, discriminant, is_positive):
+        """Format quadratic solution with exact form when possible"""
+        if discriminant < 0:
+            # Complex case - handled separately
+            return None
+            
+        sqrt_disc = self._sqrt(discriminant)
+        
+        # Check if discriminant is a perfect square
+        sqrt_disc_int = round(sqrt_disc)
+        if abs(sqrt_disc - sqrt_disc_int) < 1e-9:
+            # Perfect square case
+            if is_positive:
+                numer = -b + sqrt_disc_int
+            else:
+                numer = -b - sqrt_disc_int
+            denom = 2 * a
+            
+            # Simplify the fraction
+            gcd = self._gcd(numer, denom)
+            numer //= gcd
+            denom //= gcd
+            
+            if denom == 1:
+                # Convert to int to remove .0
+                return str(int(numer))
+            elif denom == -1:
+                # Convert to int to remove .0
+                return str(int(-numer))
+            else:
+                # Convert to int to remove .0 if possible
+                if abs(numer - round(numer)) < 1e-9 and abs(denom - round(denom)) < 1e-9:
+                    return f"{int(round(numer))}/{int(round(denom))}"
+                else:
+                    return f"{numer}/{denom}"
+        
+        
+        numer = -b
+        denom = 2 * a
+        
+        # Find common factors
+        gcd_val = self._gcd(abs(numer), abs(denom))
+        if gcd_val > 1:
+            numer //= gcd_val
+            denom //= gcd_val
+            sqrt_disc = sqrt_disc / gcd_val
+        
+        # Special case: check if we have the pattern (-1 ± √3) / 2
+        # This happens when discriminant = 12, so √12 = 2√3
+        # After factoring out 2, we get (-1 ± √3) / 2
+        if denom == 2 and numer == -1:
+            # Check if sqrt_disc is close to √3
+            sqrt_3 = 1.7320508075688772
+            if abs(sqrt_disc - sqrt_3) < 1e-9:
+                if is_positive:
+                    return f"(-1 + √3) / 2"
+                else:
+                    return f"(-1 - √3) / 2"
+        
+        # General case: try to format as (integer ± √integer) / integer
+        if abs(numer - round(numer)) < 1e-9 and abs(denom - round(denom)) < 1e-9:
+            numer_int = int(round(numer))
+            denom_int = int(round(denom))
+            
+            # Check if sqrt_disc is close to √integer
+            sqrt_disc_squared = sqrt_disc * sqrt_disc
+            if abs(sqrt_disc_squared - round(sqrt_disc_squared)) < 1e-9:
+                sqrt_val = int(round(sqrt_disc_squared))
+                
+                # Special case: if numerator is 0, just show ±√val
+                if numer_int == 0:
+                    if is_positive:
+                        return f"√{sqrt_val}"
+                    else:
+                        return f"-√{sqrt_val}"
+                # Special case: if denominator is 1, show without fraction
+                elif denom_int == 1:
+                    if is_positive:
+                        return f"{numer_int} + √{sqrt_val}"
+                    else:
+                        return f"{numer_int} - √{sqrt_val}"
+                else:
+                    if is_positive:
+                        return f"({numer_int} + √{sqrt_val}) / {denom_int}"
+                    else:
+                        return f"({numer_int} - √{sqrt_val}) / {denom_int}"
+        
+        # If no special case found, return decimal approximation
+        if is_positive:
+            solution = (-b + sqrt_disc) / (2 * a)
+        else:
+            solution = (-b - sqrt_disc) / (2 * a)
+        
+        # Format the solution properly (remove .0 for integers)
+        if abs(solution - round(solution)) < 1e-9:
+            return str(int(round(solution)))
+        else:
+            return str(solution)
 
 
 def main():
