@@ -571,17 +571,6 @@ class PolynomialSolver:
             denom //= gcd_val
             sqrt_disc = sqrt_disc / gcd_val
         
-        # Special case: check if we have the pattern (-1 ± √3) / 2
-        # This happens when discriminant = 12, so √12 = 2√3
-        # After factoring out 2, we get (-1 ± √3) / 2
-        if denom == 2 and numer == -1:
-            # Check if sqrt_disc is close to √3
-            sqrt_3 = 1.7320508075688772
-            if abs(sqrt_disc - sqrt_3) < 1e-9:
-                if is_positive:
-                    return f"(-1 + √3) / 2"
-                else:
-                    return f"(-1 - √3) / 2"
         
         # General case: try to format as (integer ± √integer) / integer
         if abs(numer - round(numer)) < 1e-9 and abs(denom - round(denom)) < 1e-9:
